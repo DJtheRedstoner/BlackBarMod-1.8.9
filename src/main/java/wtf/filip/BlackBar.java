@@ -114,8 +114,8 @@ public class BlackBar {
                         String date = dateFormat.format(now);
                         String time = timeFormat.format(now);
                         int x = (int) Minecraft.getMinecraft().thePlayer.posX;
-                        int y = (int) Minecraft.getMinecraft().thePlayer.posZ;
-                        int z = (int) Minecraft.getMinecraft().thePlayer.posY;
+                        int y = (int) Minecraft.getMinecraft().thePlayer.posY;
+                        int z = (int) Minecraft.getMinecraft().thePlayer.posZ;
                         String coords = "PosX " + x + " PosY " + y + " PoxZ " + z;
                         String name = "Name " + Minecraft.getMinecraft().thePlayer.getName();
                         if (BlackBar.instance.date) {
