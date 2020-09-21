@@ -7,6 +7,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.ScaledResolution;
+import net.minecraft.client.network.NetworkPlayerInfo;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.ICommandSender;
@@ -153,12 +154,14 @@ public class BlackBar {
                             res.getScaledHeight() - fontRenderer.FONT_HEIGHT - 2, -1, true);
                 }
                 if (pi.b) {
-                    int p = 0;
-                    if (Minecraft.getMinecraft().getNetHandler() != null) {
-                        p =
-                                Minecraft.getMinecraft().getNetHandler().getPlayerInfo(Minecraft.getMinecraft().thePlayer.getUniqueID()).getResponseTime();
+                    int ping = 0;
+                    NetworkPlayerInfo p =
+                            Minecraft.getMinecraft().getNetHandler().getPlayerInfo(Minecraft.getMinecraft().thePlayer.getGameProfile().getId());
+                    if (p != null) {
+                        ping = p.getResponseTime();
                     }
-                    String ta = "Ping " + EnumChatFormatting.GREEN + p;
+
+                    String ta = "Ping " + EnumChatFormatting.GREEN + ping;
                     fontRenderer.drawString(ta,
                             ((res.getScaledWidth() / 2) - 90) - fontRenderer.getStringWidth(ta) - 3,
                             res.getScaledHeight() - fontRenderer.FONT_HEIGHT * 2 - 2, -1, true);
