@@ -36,7 +36,7 @@ import java.util.Map;
  */
 @Mod(modid = "blackbar", name = "BlackBar", version = BlackBar.VERSION)
 public class BlackBar {
-    public static final String VERSION = "1.0.1";
+    public static final String VERSION = "1.0.2";
     private static final File config = new File("./config/bb.json");
     @Mod.Instance("blackbar")
     public static BlackBar instance;
@@ -60,17 +60,14 @@ public class BlackBar {
     }
 
     private void loadConfig() {
-        try {
-            if (!config.exists()) {
+        if (!config.exists()) {
+            try {
                 config.createNewFile();
-                configMap.put("name", new C(true, 0, 0));
-                configMap.put("coords", new C(true, 0, 0));
-                configMap.put("date", new C(true, 0, 0));
-                configMap.put("time", new C(true, 0, 0));
-                configMap.put("ping", new C(true, 0, 0));
-                configMap.put("fps", new C(true, 0, 0));
-            } else {
-                Reader reader = Files.newBufferedReader(Paths.get(config.getPath()));
+            } catch (Exception ignored) {
+            }
+            l();
+        } else {
+            try (Reader reader = Files.newBufferedReader(Paths.get(config.getPath()))) {
                 JsonObject object = new Gson().fromJson(reader, JsonObject.class);
                 enabled = object.get("enabled").getAsBoolean();
                 opacity = object.get("opacity").getAsInt();
@@ -78,20 +75,29 @@ public class BlackBar {
                         C>>() {
                 }.getType());
                 configMap.putAll(o);
+            } catch (Exception e) {
+                config.delete();
+                l();
             }
-        } catch (Exception ignored) {
-
         }
+
+    }
+
+    private void l() {
+        configMap.put("name", new C(true, 0, 0));
+        configMap.put("coords", new C(true, 0, 0));
+        configMap.put("date", new C(true, 0, 0));
+        configMap.put("time", new C(true, 0, 0));
+        configMap.put("ping", new C(true, 0, 0));
+        configMap.put("fps", new C(true, 0, 0));
+        saveConfig();
     }
 
     private void saveConfig() {
-        try {
-            Writer writer = new FileWriter(config.getPath());
+        try (Writer writer = new FileWriter(config.getPath())) {
             new Gson().toJson(BlackBar.instance, writer);
-            writer.close();
         } catch (Exception ignored) {
         }
-
     }
 
     static class Render {
@@ -100,7 +106,7 @@ public class BlackBar {
 
         @SubscribeEvent
         public void render(TickEvent.RenderTickEvent event) {
-            if (event.phase.equals(TickEvent.Phase.END) && BlackBar.instance.enabled && Minecraft.getMinecraft().currentScreen == null) {
+            if (event.phase.equals(TickEvent.Phase.END) && BlackBar.instance.enabled && Minecraft.getMinecraft().currentScreen == null && Minecraft.getMinecraft().thePlayer != null) {
                 FontRenderer fontRenderer = Minecraft.getMinecraft().fontRendererObj;
                 ScaledResolution res = new ScaledResolution(Minecraft.getMinecraft());
                 int blackBarHeight = fontRenderer.FONT_HEIGHT * 2 + 4;
@@ -117,9 +123,9 @@ public class BlackBar {
                 C c = BlackBar.instance.configMap.get("coords");
                 C pi = BlackBar.instance.configMap.get("ping");
                 C fp = BlackBar.instance.configMap.get("fps");
+                LocalDateTime now = LocalDateTime.now();
 
                 if (d.b) {
-                    LocalDateTime now = LocalDateTime.now();
                     String date = dateFormat.format(now);
                     String text = "Date " + date;
                     fontRenderer.drawString(text,
@@ -127,7 +133,6 @@ public class BlackBar {
                             res.getScaledHeight() - fontRenderer.FONT_HEIGHT - 2, -1, true);
                 }
                 if (t.b) {
-                    LocalDateTime now = LocalDateTime.now();
                     String time = timeFormat.format(now);
                     String text = "Time " + time;
                     fontRenderer.drawString(text,
@@ -148,8 +153,11 @@ public class BlackBar {
                             res.getScaledHeight() - fontRenderer.FONT_HEIGHT - 2, -1, true);
                 }
                 if (pi.b) {
-                    int p =
-                            Minecraft.getMinecraft().getNetHandler().getPlayerInfo(Minecraft.getMinecraft().thePlayer.getUniqueID()).getResponseTime();
+                    int p = 0;
+                    if (Minecraft.getMinecraft().getNetHandler() != null) {
+                        p =
+                                Minecraft.getMinecraft().getNetHandler().getPlayerInfo(Minecraft.getMinecraft().thePlayer.getUniqueID()).getResponseTime();
+                    }
                     String ta = "Ping " + EnumChatFormatting.GREEN + p;
                     fontRenderer.drawString(ta,
                             ((res.getScaledWidth() / 2) - 90) - fontRenderer.getStringWidth(ta) - 3,
@@ -194,10 +202,8 @@ public class BlackBar {
                 try {
                     int op = Integer.parseInt(args[0]);
                     if (op > 255 || op < 0)
-                        Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText(PREFIX + " Enter opacity " +
-                                "value " +
-                                "between " +
-                                "0 and 255"));
+                        Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText(
+                                PREFIX + " Enter opacity value between 0 and 255"));
                     else
                         BlackBar.instance.opacity = op;
                 } catch (NumberFormatException e) {
@@ -213,6 +219,12 @@ public class BlackBar {
                             break;
                         case "coords":
                             BlackBar.instance.f("coords");
+                            break;
+                        case "ping":
+                            BlackBar.instance.f("ping");
+                            break;
+                        case "fps":
+                            BlackBar.instance.f("fps");
                             break;
                         default:
                             Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText(PREFIX + " " + getCommandUsage(sender)));
