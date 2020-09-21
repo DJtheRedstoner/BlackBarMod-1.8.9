@@ -36,3 +36,4 @@ run
 # Project exclude paths
 /.gradle/
 /build/
+/.github/
