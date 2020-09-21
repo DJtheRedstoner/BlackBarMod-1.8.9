@@ -25,6 +25,7 @@ minecraft {
     runDir = "run"
     mappings = project.mcpVersion
     makeObfSourceJar = false
+    clientJvmArgs += ["-Dfml.coreMods.load=wtf.filip.A"]
 }
 
 dependencies {
@@ -46,5 +47,13 @@ processResources {
     // copy everything else, thats not the mcmod.info
     from(sourceSets.main.resources.srcDirs) {
         exclude "mcmod.info"
+    }
+}
+
+jar {
+    manifest {
+        attributes "FMLCorePlugin": "wtf.filip.A",
+                "ModSide": "CLIENT",
+                "FMLCorePluginContainsFMLMod": true
     }
 }

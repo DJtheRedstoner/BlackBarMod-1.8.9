@@ -37,13 +37,15 @@ import java.util.Map;
  */
 @Mod(modid = "blackbar", name = "BlackBar", version = BlackBar.VERSION)
 public class BlackBar {
-    public static final String VERSION = "1.0.2";
+    public static final String VERSION = "1.0.3";
     private static final File config = new File("./config/bb.json");
     @Mod.Instance("blackbar")
     public static BlackBar instance;
     private final Map<String, C> configMap = new HashMap<>();
+    public boolean hotbar = false;
     private int opacity = 97;
     private boolean enabled = true;
+    private boolean semiColon = false;
 
     public static int toRGBA(Color c) {
         return c.getRed() | c.getGreen() << 8 | c.getBlue() << 16 | c.getAlpha() << 24;
@@ -71,12 +73,16 @@ public class BlackBar {
             try (Reader reader = Files.newBufferedReader(Paths.get(config.getPath()))) {
                 JsonObject object = new Gson().fromJson(reader, JsonObject.class);
                 enabled = object.get("enabled").getAsBoolean();
+                semiColon = object.get("semiColon").getAsBoolean();
                 opacity = object.get("opacity").getAsInt();
+                hotbar = object.get("hotbar").getAsBoolean();
+                E.hotbar = hotbar;
                 Map<String, C> o = new Gson().fromJson(object.getAsJsonObject("configMap").toString(), new TypeToken<Map<String,
                         C>>() {
                 }.getType());
                 configMap.putAll(o);
             } catch (Exception e) {
+                e.printStackTrace();
                 config.delete();
                 l();
             }
@@ -125,31 +131,28 @@ public class BlackBar {
                 C pi = BlackBar.instance.configMap.get("ping");
                 C fp = BlackBar.instance.configMap.get("fps");
                 LocalDateTime now = LocalDateTime.now();
-
+                String s = BlackBar.instance.semiColon ? ":" : "";
                 if (d.b) {
-                    String date = dateFormat.format(now);
-                    String text = "Date " + date;
+                    String text = String.format("Date%s %s", s, dateFormat.format(now));
                     fontRenderer.drawString(text,
                             res.getScaledWidth() - fontRenderer.getStringWidth(text) - 3,
                             res.getScaledHeight() - fontRenderer.FONT_HEIGHT - 2, -1, true);
                 }
                 if (t.b) {
-                    String time = timeFormat.format(now);
-                    String text = "Time " + time;
+                    String text = String.format("Time%s %s", s, timeFormat.format(now));
                     fontRenderer.drawString(text,
                             res.getScaledWidth() - fontRenderer.getStringWidth(text) - 3,
                             res.getScaledHeight() - fontRenderer.FONT_HEIGHT * 2 - 2, -1, true);
                 }
                 if (n.b) {
-                    String name = "Name " + Minecraft.getMinecraft().thePlayer.getName();
+                    String name = String.format("Name%s %s", s,
+                            EnumChatFormatting.RED + Minecraft.getMinecraft().thePlayer.getName());
                     fontRenderer.drawString(name, 3,
                             res.getScaledHeight() - fontRenderer.FONT_HEIGHT * 2 - 2, -1, true);
                 }
                 if (c.b) {
-                    int x = (int) Minecraft.getMinecraft().thePlayer.posX;
-                    int y = (int) Minecraft.getMinecraft().thePlayer.posY;
-                    int z = (int) Minecraft.getMinecraft().thePlayer.posZ;
-                    String coords = "PosX " + x + " PosY " + y + " PoxZ " + z;
+                    String coords = String.format("PosX%s %s PosY%s %s PosZ%s %s", s,
+                            (int) Minecraft.getMinecraft().thePlayer.posX, s, (int) Minecraft.getMinecraft().thePlayer.posY, s, (int) Minecraft.getMinecraft().thePlayer.posZ);
                     fontRenderer.drawString(coords, 3,
                             res.getScaledHeight() - fontRenderer.FONT_HEIGHT - 2, -1, true);
                 }
@@ -160,15 +163,13 @@ public class BlackBar {
                     if (p != null) {
                         ping = p.getResponseTime();
                     }
-
-                    String ta = "Ping " + EnumChatFormatting.GREEN + ping;
+                    String ta = String.format("Ping%s %s", s, EnumChatFormatting.GREEN.toString() + ping);
                     fontRenderer.drawString(ta,
                             ((res.getScaledWidth() / 2) - 90) - fontRenderer.getStringWidth(ta) - 3,
                             res.getScaledHeight() - fontRenderer.FONT_HEIGHT * 2 - 2, -1, true);
                 }
                 if (fp.b) {
-                    int f = Minecraft.getDebugFPS();
-                    String fa = "FPS " + f;
+                    String fa = String.format("FPS%s %s", s, Minecraft.getDebugFPS());
                     fontRenderer.drawString(fa,
                             ((res.getScaledWidth() / 2) - 90) - fontRenderer.getStringWidth(fa) - 3,
                             res.getScaledHeight() - fontRenderer.FONT_HEIGHT - 2, -1, true);
@@ -211,8 +212,15 @@ public class BlackBar {
                         BlackBar.instance.opacity = op;
                 } catch (NumberFormatException e) {
                     switch (args[0].toLowerCase()) {
+                        case "hotbar":
+                            BlackBar.instance.hotbar = !BlackBar.instance.hotbar;
+                            E.hotbar = BlackBar.instance.hotbar;
+                            break;
                         case "time":
                             BlackBar.instance.f("time");
+                            break;
+                        case ":":
+                            BlackBar.instance.semiColon = !BlackBar.instance.semiColon;
                             break;
                         case "date":
                             BlackBar.instance.f("date");
@@ -234,7 +242,6 @@ public class BlackBar {
                             break;
                     }
                 }
-
             }
             BlackBar.instance.saveConfig();
         }
