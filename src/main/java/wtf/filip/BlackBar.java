@@ -2,6 +2,7 @@ package wtf.filip;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import com.google.gson.reflect.TypeToken;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.Gui;
@@ -27,21 +28,28 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author Filip
  */
 @Mod(modid = "blackbar", name = "BlackBar", version = BlackBar.VERSION)
 public class BlackBar {
-    public static final String VERSION = "1.0.0";
+    public static final String VERSION = "1.0.1";
     private static final File config = new File("./config/bb.json");
     @Mod.Instance("blackbar")
     public static BlackBar instance;
+    private final Map<String, C> configMap = new HashMap<>();
     private int opacity = 97;
-    private boolean name = true, coords = true, time = true, date = true, enabled = true;
+    private boolean enabled = true;
 
     public static int toRGBA(Color c) {
         return c.getRed() | c.getGreen() << 8 | c.getBlue() << 16 | c.getAlpha() << 24;
+    }
+
+    private void f(String key) {
+        configMap.get(key).b = !configMap.get(key).b;
     }
 
     @Mod.EventHandler
@@ -51,22 +59,25 @@ public class BlackBar {
         ClientCommandHandler.instance.registerCommand(new BlackBarCommand());
     }
 
-
     private void loadConfig() {
         try {
             if (!config.exists()) {
                 config.createNewFile();
+                configMap.put("name", new C(true, 0, 0));
+                configMap.put("coords", new C(true, 0, 0));
+                configMap.put("date", new C(true, 0, 0));
+                configMap.put("time", new C(true, 0, 0));
+                configMap.put("ping", new C(true, 0, 0));
+                configMap.put("fps", new C(true, 0, 0));
             } else {
                 Reader reader = Files.newBufferedReader(Paths.get(config.getPath()));
                 JsonObject object = new Gson().fromJson(reader, JsonObject.class);
                 enabled = object.get("enabled").getAsBoolean();
                 opacity = object.get("opacity").getAsInt();
-                name = object.get("name").getAsBoolean();
-                coords = object.get("coords").getAsBoolean();
-                time = object.get("time").getAsBoolean();
-                date = object.get("date").getAsBoolean();
-
-                reader.close();
+                Map<String, C> o = new Gson().fromJson(object.getAsJsonObject("configMap").toString(), new TypeToken<Map<String,
+                        C>>() {
+                }.getType());
+                configMap.putAll(o);
             }
         } catch (Exception ignored) {
 
@@ -76,15 +87,7 @@ public class BlackBar {
     private void saveConfig() {
         try {
             Writer writer = new FileWriter(config.getPath());
-            JsonObject a = new JsonObject();
-            a.addProperty("enabled", enabled);
-            a.addProperty("opacity", opacity);
-            a.addProperty("name", name);
-            a.addProperty("coords", coords);
-            a.addProperty("time", time);
-            a.addProperty("date", date);
-
-            new Gson().toJson(a, writer);
+            new Gson().toJson(BlackBar.instance, writer);
             writer.close();
         } catch (Exception ignored) {
         }
@@ -97,49 +100,73 @@ public class BlackBar {
 
         @SubscribeEvent
         public void render(TickEvent.RenderTickEvent event) {
-            if (event.phase.equals(TickEvent.Phase.END))
-                if (BlackBar.instance.enabled)
-                    if (Minecraft.getMinecraft().currentScreen == null) {
-                        FontRenderer fontRenderer = Minecraft.getMinecraft().fontRendererObj;
+            if (event.phase.equals(TickEvent.Phase.END) && BlackBar.instance.enabled && Minecraft.getMinecraft().currentScreen == null) {
+                FontRenderer fontRenderer = Minecraft.getMinecraft().fontRendererObj;
+                ScaledResolution res = new ScaledResolution(Minecraft.getMinecraft());
+                int blackBarHeight = fontRenderer.FONT_HEIGHT * 2 + 4;
+                GlStateManager.pushMatrix();
+                GlStateManager.enableAlpha();
+                GlStateManager.enableBlend();
+                Gui.drawRect(2, res.getScaledHeight() - blackBarHeight, res.getScaledWidth() - 2,
+                        res.getScaledHeight() - 2,
+                        BlackBar.toRGBA(new Color(0, 0, 0, BlackBar.instance.opacity)));
 
-                        ScaledResolution res = new ScaledResolution(Minecraft.getMinecraft());
-                        int blackBarHeight = fontRenderer.FONT_HEIGHT * 2 + 4;
-                        GlStateManager.pushMatrix();
-                        GlStateManager.enableAlpha();
-                        GlStateManager.enableBlend();
-                        Gui.drawRect(2, res.getScaledHeight() - blackBarHeight, res.getScaledWidth() - 2,
-                                res.getScaledHeight() - 2,
-                                BlackBar.toRGBA(new Color(0, 0, 0, BlackBar.instance.opacity)));
-                        LocalDateTime now = LocalDateTime.now();
-                        String date = dateFormat.format(now);
-                        String time = timeFormat.format(now);
-                        int x = (int) Minecraft.getMinecraft().thePlayer.posX;
-                        int y = (int) Minecraft.getMinecraft().thePlayer.posY;
-                        int z = (int) Minecraft.getMinecraft().thePlayer.posZ;
-                        String coords = "PosX " + x + " PosY " + y + " PoxZ " + z;
-                        String name = "Name " + Minecraft.getMinecraft().thePlayer.getName();
-                        if (BlackBar.instance.date) {
-                            String text = "Date " + date;
-                            fontRenderer.drawString(text,
-                                    res.getScaledWidth() - fontRenderer.getStringWidth(text) - 3,
-                                    res.getScaledHeight() - fontRenderer.FONT_HEIGHT - 2, -1, true);
-                        }
-                        if (BlackBar.instance.time) {
-                            String text = "Time " + time;
-                            fontRenderer.drawString(text,
-                                    res.getScaledWidth() - fontRenderer.getStringWidth(text) - 3,
-                                    res.getScaledHeight() - fontRenderer.FONT_HEIGHT * 2 - 2, -1, true);
-                        }
-                        if (BlackBar.instance.name)
-                            fontRenderer.drawString(name, 3,
-                                    res.getScaledHeight() - fontRenderer.FONT_HEIGHT * 2 - 2, -1, true);
-                        if (BlackBar.instance.coords)
-                            fontRenderer.drawString(coords, 3,
-                                    res.getScaledHeight() - fontRenderer.FONT_HEIGHT - 2, -1, true);
-                        GlStateManager.disableBlend();
-                        GlStateManager.disableAlpha();
-                        GlStateManager.popMatrix();
-                    }
+                C d = BlackBar.instance.configMap.get("date");
+                C t = BlackBar.instance.configMap.get("time");
+                C n = BlackBar.instance.configMap.get("name");
+                C c = BlackBar.instance.configMap.get("coords");
+                C pi = BlackBar.instance.configMap.get("ping");
+                C fp = BlackBar.instance.configMap.get("fps");
+
+                if (d.b) {
+                    LocalDateTime now = LocalDateTime.now();
+                    String date = dateFormat.format(now);
+                    String text = "Date " + date;
+                    fontRenderer.drawString(text,
+                            res.getScaledWidth() - fontRenderer.getStringWidth(text) - 3,
+                            res.getScaledHeight() - fontRenderer.FONT_HEIGHT - 2, -1, true);
+                }
+                if (t.b) {
+                    LocalDateTime now = LocalDateTime.now();
+                    String time = timeFormat.format(now);
+                    String text = "Time " + time;
+                    fontRenderer.drawString(text,
+                            res.getScaledWidth() - fontRenderer.getStringWidth(text) - 3,
+                            res.getScaledHeight() - fontRenderer.FONT_HEIGHT * 2 - 2, -1, true);
+                }
+                if (n.b) {
+                    String name = "Name " + Minecraft.getMinecraft().thePlayer.getName();
+                    fontRenderer.drawString(name, 3,
+                            res.getScaledHeight() - fontRenderer.FONT_HEIGHT * 2 - 2, -1, true);
+                }
+                if (c.b) {
+                    int x = (int) Minecraft.getMinecraft().thePlayer.posX;
+                    int y = (int) Minecraft.getMinecraft().thePlayer.posY;
+                    int z = (int) Minecraft.getMinecraft().thePlayer.posZ;
+                    String coords = "PosX " + x + " PosY " + y + " PoxZ " + z;
+                    fontRenderer.drawString(coords, 3,
+                            res.getScaledHeight() - fontRenderer.FONT_HEIGHT - 2, -1, true);
+                }
+                if (pi.b) {
+                    int p =
+                            Minecraft.getMinecraft().getNetHandler().getPlayerInfo(Minecraft.getMinecraft().thePlayer.getUniqueID()).getResponseTime();
+                    String ta = "Ping " + EnumChatFormatting.GREEN + p;
+                    fontRenderer.drawString(ta,
+                            ((res.getScaledWidth() / 2) - 90) - fontRenderer.getStringWidth(ta) - 3,
+                            res.getScaledHeight() - fontRenderer.FONT_HEIGHT * 2 - 2, -1, true);
+                }
+                if (fp.b) {
+                    int f = Minecraft.getDebugFPS();
+                    String fa = "FPS " + f;
+                    fontRenderer.drawString(fa,
+                            ((res.getScaledWidth() / 2) - 90) - fontRenderer.getStringWidth(fa) - 3,
+                            res.getScaledHeight() - fontRenderer.FONT_HEIGHT - 2, -1, true);
+
+                }
+                GlStateManager.disableBlend();
+                GlStateManager.disableAlpha();
+                GlStateManager.popMatrix();
+            }
         }
     }
 
@@ -176,16 +203,16 @@ public class BlackBar {
                 } catch (NumberFormatException e) {
                     switch (args[0].toLowerCase()) {
                         case "time":
-                            BlackBar.instance.time = !BlackBar.instance.time;
+                            BlackBar.instance.f("time");
                             break;
                         case "date":
-                            BlackBar.instance.date = !BlackBar.instance.date;
+                            BlackBar.instance.f("date");
                             break;
                         case "name":
-                            BlackBar.instance.name = !BlackBar.instance.name;
+                            BlackBar.instance.f("name");
                             break;
                         case "coords":
-                            BlackBar.instance.coords = !BlackBar.instance.coords;
+                            BlackBar.instance.f("coords");
                             break;
                         default:
                             Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText(PREFIX + " " + getCommandUsage(sender)));
@@ -202,6 +229,17 @@ public class BlackBar {
             return -1;
         }
 
+    }
+
+    static class C {
+        public boolean b;
+        public double x, y;
+
+        private C(boolean b, double x, double y) {
+            this.b = b;
+            this.x = x;
+            this.y = y;
+        }
     }
 
 }
