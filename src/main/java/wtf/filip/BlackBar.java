@@ -41,7 +41,7 @@ public class BlackBar {
     private static final File config = new File("./config/bb.json");
     @Mod.Instance("blackbar")
     public static BlackBar instance;
-    private final Map<String, C> configMap = new HashMap<>();
+    private final Map<String, Boolean> configMap = new HashMap<>();
     public boolean hotbar = false;
     private int opacity = 97;
     private boolean enabled = true;
@@ -52,7 +52,7 @@ public class BlackBar {
     }
 
     private void f(String key) {
-        configMap.get(key).b = !configMap.get(key).b;
+        configMap.put(key, !configMap.get(key));
     }
 
     @Mod.EventHandler
@@ -77,9 +77,10 @@ public class BlackBar {
                 opacity = object.get("opacity").getAsInt();
                 hotbar = object.get("hotbar").getAsBoolean();
                 E.hotbar = hotbar;
-                Map<String, C> o = new Gson().fromJson(object.getAsJsonObject("configMap").toString(), new TypeToken<Map<String,
-                        C>>() {
-                }.getType());
+                Map<String, Boolean> o = new Gson().fromJson(object.getAsJsonObject("configMap").toString(),
+                        new TypeToken<Map<String,
+                                Boolean>>() {
+                        }.getType());
                 configMap.putAll(o);
             } catch (Exception e) {
                 e.printStackTrace();
@@ -91,12 +92,13 @@ public class BlackBar {
     }
 
     private void l() {
-        configMap.put("name", new C(true, 0, 0));
-        configMap.put("coords", new C(true, 0, 0));
-        configMap.put("date", new C(true, 0, 0));
-        configMap.put("time", new C(true, 0, 0));
-        configMap.put("ping", new C(true, 0, 0));
-        configMap.put("fps", new C(true, 0, 0));
+        configMap.put("name", true);
+        configMap.put("coords", true);
+        configMap.put("date", true);
+        configMap.put("time", true);
+        configMap.put("ping", true);
+        configMap.put("fps", true);
+        configMap.put("border", true);
         saveConfig();
     }
 
@@ -120,43 +122,57 @@ public class BlackBar {
                 GlStateManager.pushMatrix();
                 GlStateManager.enableAlpha();
                 GlStateManager.enableBlend();
+                if (BlackBar.instance.configMap.get("border")) {
+                    // TODO Fix this shit
+//                    GL11.glColor4f(1f, 1f, 1f, 1f);
+//                    GL11.glLineWidth(5.0f);
+//                    GL11.glEnable(GL11.GL_LINE_STRIP);
+//                    GL11.glVertex2d(1, res.getScaledHeight() - blackBarHeight - 1);
+//                    GL11.glVertex2d(res.getScaledWidth() - 1, res.getScaledHeight() - blackBarHeight - 1);
+//                    GL11.glVertex2d(res.getScaledWidth() - 1, res.getScaledHeight() - 1);
+//                    GL11.glVertex2d(1, res.getScaledHeight() - 1);
+//                    GL11.glVertex2d(1, res.getScaledHeight() - blackBarHeight - 1);
+//                    GL11.glEnd();
+                }
+
+                GlStateManager.translate(0, 0, -100f);
                 Gui.drawRect(2, res.getScaledHeight() - blackBarHeight, res.getScaledWidth() - 2,
                         res.getScaledHeight() - 2,
                         BlackBar.toRGBA(new Color(0, 0, 0, BlackBar.instance.opacity)));
 
-                C d = BlackBar.instance.configMap.get("date");
-                C t = BlackBar.instance.configMap.get("time");
-                C n = BlackBar.instance.configMap.get("name");
-                C c = BlackBar.instance.configMap.get("coords");
-                C pi = BlackBar.instance.configMap.get("ping");
-                C fp = BlackBar.instance.configMap.get("fps");
+                boolean d = BlackBar.instance.configMap.get("date");
+                boolean t = BlackBar.instance.configMap.get("time");
+                boolean n = BlackBar.instance.configMap.get("name");
+                boolean c = BlackBar.instance.configMap.get("coords");
+                boolean pi = BlackBar.instance.configMap.get("ping");
+                boolean fp = BlackBar.instance.configMap.get("fps");
                 LocalDateTime now = LocalDateTime.now();
                 String s = BlackBar.instance.semiColon ? ":" : "";
-                if (d.b) {
+                if (d) {
                     String text = String.format("Date%s %s", s, dateFormat.format(now));
                     fontRenderer.drawString(text,
                             res.getScaledWidth() - fontRenderer.getStringWidth(text) - 3,
                             res.getScaledHeight() - fontRenderer.FONT_HEIGHT - 2, -1, true);
                 }
-                if (t.b) {
+                if (t) {
                     String text = String.format("Time%s %s", s, timeFormat.format(now));
                     fontRenderer.drawString(text,
                             res.getScaledWidth() - fontRenderer.getStringWidth(text) - 3,
                             res.getScaledHeight() - fontRenderer.FONT_HEIGHT * 2 - 2, -1, true);
                 }
-                if (n.b) {
+                if (n) {
                     String name = String.format("Name%s %s", s,
                             EnumChatFormatting.RED + Minecraft.getMinecraft().thePlayer.getName());
                     fontRenderer.drawString(name, 3,
                             res.getScaledHeight() - fontRenderer.FONT_HEIGHT * 2 - 2, -1, true);
                 }
-                if (c.b) {
+                if (c) {
                     String coords = String.format("PosX%s %s PosY%s %s PosZ%s %s", s,
                             (int) Minecraft.getMinecraft().thePlayer.posX, s, (int) Minecraft.getMinecraft().thePlayer.posY, s, (int) Minecraft.getMinecraft().thePlayer.posZ);
                     fontRenderer.drawString(coords, 3,
                             res.getScaledHeight() - fontRenderer.FONT_HEIGHT - 2, -1, true);
                 }
-                if (pi.b) {
+                if (pi) {
                     int ping = 0;
                     NetworkPlayerInfo p =
                             Minecraft.getMinecraft().getNetHandler().getPlayerInfo(Minecraft.getMinecraft().thePlayer.getGameProfile().getId());
@@ -168,12 +184,11 @@ public class BlackBar {
                             ((res.getScaledWidth() / 2) - 90) - fontRenderer.getStringWidth(ta) - 3,
                             res.getScaledHeight() - fontRenderer.FONT_HEIGHT * 2 - 2, -1, true);
                 }
-                if (fp.b) {
+                if (fp) {
                     String fa = String.format("FPS%s %s", s, Minecraft.getDebugFPS());
                     fontRenderer.drawString(fa,
                             ((res.getScaledWidth() / 2) - 90) - fontRenderer.getStringWidth(fa) - 3,
                             res.getScaledHeight() - fontRenderer.FONT_HEIGHT - 2, -1, true);
-
                 }
                 GlStateManager.disableBlend();
                 GlStateManager.disableAlpha();
@@ -195,7 +210,7 @@ public class BlackBar {
 
         @Override
         public String getCommandUsage(ICommandSender sender) {
-            return "/blackbar \n /blackbar <opacity> \n /blackbar <time/date/name/coords/fps/ping> ";
+            return "/blackbar \n /blackbar <opacity> \n /blackbar <time/date/name/coords/fps/ping/border> ";
         }
 
         @Override
@@ -215,30 +230,35 @@ public class BlackBar {
                         case "hotbar":
                             BlackBar.instance.hotbar = !BlackBar.instance.hotbar;
                             E.hotbar = BlackBar.instance.hotbar;
+                            send("hotbar", false);
                             break;
                         case "time":
-                            BlackBar.instance.f("time");
+                            send("time", true);
                             break;
                         case ":":
                             BlackBar.instance.semiColon = !BlackBar.instance.semiColon;
+                            send("semi", false);
                             break;
                         case "date":
-                            BlackBar.instance.f("date");
+                            send("date", true);
                             break;
                         case "name":
-                            BlackBar.instance.f("name");
+                            send("name", true);
                             break;
                         case "coords":
-                            BlackBar.instance.f("coords");
+                            send("coords", true);
                             break;
                         case "ping":
-                            BlackBar.instance.f("ping");
+                            send("ping", true);
                             break;
                         case "fps":
-                            BlackBar.instance.f("fps");
+                            send("fps", true);
+                            break;
+                        case "border":
+                            send("border", true);
                             break;
                         default:
-                            Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText(PREFIX + " " + getCommandUsage(sender)));
+                            send(getCommandUsage(sender), false);
                             break;
                     }
                 }
@@ -246,22 +266,19 @@ public class BlackBar {
             BlackBar.instance.saveConfig();
         }
 
+        private void send(String text, boolean config) {
+            if (config) {
+                BlackBar.instance.f(text);
+                text += BlackBar.instance.configMap.get(text) ? " was enabled" : " was disabled";
+            }
+            Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText(PREFIX + " " + text));
+        }
+
         @Override
         public int getRequiredPermissionLevel() {
             return -1;
         }
 
-    }
-
-    static class C {
-        public boolean b;
-        public double x, y;
-
-        private C(boolean b, double x, double y) {
-            this.b = b;
-            this.x = x;
-            this.y = y;
-        }
     }
 
 }
