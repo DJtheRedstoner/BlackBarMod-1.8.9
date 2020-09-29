@@ -20,18 +20,6 @@ build
 # other
 eclipse
 run
-!/saves/
-!/logs/
-!/mods/
-!/config/
-!/.gradle/
-!/build/
-!/.idea/
-!/resourcepacks/
-!/usercache.json
-!/crash-reports/
-!/usernamecache.json
-!/options.txt
 
 # Project exclude paths
 /.gradle/

@@ -19,6 +19,7 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
+import org.lwjgl.opengl.GL11;
 
 import java.awt.*;
 import java.io.File;
@@ -123,16 +124,17 @@ public class BlackBar {
                 GlStateManager.enableAlpha();
                 GlStateManager.enableBlend();
                 if (BlackBar.instance.configMap.get("border")) {
-                    // TODO Fix this shit
-//                    GL11.glColor4f(1f, 1f, 1f, 1f);
-//                    GL11.glLineWidth(5.0f);
-//                    GL11.glEnable(GL11.GL_LINE_STRIP);
-//                    GL11.glVertex2d(1, res.getScaledHeight() - blackBarHeight - 1);
-//                    GL11.glVertex2d(res.getScaledWidth() - 1, res.getScaledHeight() - blackBarHeight - 1);
-//                    GL11.glVertex2d(res.getScaledWidth() - 1, res.getScaledHeight() - 1);
-//                    GL11.glVertex2d(1, res.getScaledHeight() - 1);
-//                    GL11.glVertex2d(1, res.getScaledHeight() - blackBarHeight - 1);
-//                    GL11.glEnd();
+                    GL11.glColor4f(1f, 1f, 1f, 1f);
+                    GL11.glLineWidth(5.0f);
+                    GlStateManager.disableTexture2D();
+                    GL11.glBegin(GL11.GL_LINE_STRIP);
+                    GL11.glVertex2d(1, res.getScaledHeight() - blackBarHeight - 1);
+                    GL11.glVertex2d(res.getScaledWidth() - 1, res.getScaledHeight() - blackBarHeight - 1);
+                    GL11.glVertex2d(res.getScaledWidth() - 1, res.getScaledHeight() - 1);
+                    GL11.glVertex2d(1, res.getScaledHeight() - 1);
+                    GL11.glVertex2d(1, res.getScaledHeight() - blackBarHeight - 1);
+                    GL11.glEnd();
+                    GlStateManager.enableTexture2D();
                 }
 
                 GlStateManager.translate(0, 0, -100f);
